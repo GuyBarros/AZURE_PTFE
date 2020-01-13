@@ -1,6 +1,6 @@
 ##############################################################################
 # HashiCorp PTFE instlation Demo
-# 
+#
 # This Terraform configuration will create the following:
 #
 # * Resource group with a virtual network and subnet
@@ -9,8 +9,8 @@
 ##############################################################################
 # Shared infrastructure resources
 
-# First we'll create a resource group. In Azure every resource belongs to a 
-# resource group. Think of it as a container to hold all your resources. 
+# First we'll create a resource group. In Azure every resource belongs to a
+# resource group. Think of it as a container to hold all your resources.
 # You can find a complete list of Azure resources supported by Terraform here:
 # https://www.terraform.io/docs/providers/azurerm/
 #this change doesnt do anything
@@ -32,8 +32,8 @@ resource "azurerm_virtual_network" "vnet" {
   resource_group_name = "${azurerm_resource_group.ptfe.name}"
 }
 
-# Next we'll build a subnet to run our VMs in. These variables can be defined 
-# via environment variables, a config file, or command line flags. Default 
+# Next we'll build a subnet to run our VMs in. These variables can be defined
+# via environment variables, a config file, or command line flags. Default
 # values will be used if the user does not override them. You can find all the
 # default variables in the variables.tf file. You can customize this demo by
 # making a copy of the terraform.tfvars.example file.
@@ -47,12 +47,12 @@ resource "azurerm_subnet" "subnet" {
 ##############################################################################
 # HashiCorp ptfe Server
 #
-# Now that we have a network, we'll deploy a stand-alone HashiCorp ptfe 
+# Now that we have a network, we'll deploy a stand-alone HashiCorp ptfe
 # server.
 
 # An Azure Virtual Machine has several components. In this example we'll build
-# a security group, a network interface, a public ip address, a storage 
-# account and finally the VM itself. Terraform handles all the dependencies 
+# a security group, a network interface, a public ip address, a storage
+# account and finally the VM itself. Terraform handles all the dependencies
 # automatically, and each resource is named with user-defined variables.
 
 # Security group to allow inbound access on port 8200,443,80,22 and 9870-9880
@@ -122,7 +122,7 @@ resource "azurerm_network_security_group" "ptfe-sg" {
   }
 }
 
-# A network interface. This is required by the azurerm_virtual_machine 
+# A network interface. This is required by the azurerm_virtual_machine
 # resource. Terraform will let you know if you're missing a dependency.
 resource "azurerm_network_interface" "ptfe-nic" {
   name                = "${var.demo_prefix}ptfe-nic"
@@ -139,8 +139,8 @@ resource "azurerm_network_interface" "ptfe-nic" {
   }
 }
 
-# Every Azure Virtual Machine comes with a private IP address. You can also 
-# optionally add a public IP address for Internet-facing applications and 
+# Every Azure Virtual Machine comes with a private IP address. You can also
+# optionally add a public IP address for Internet-facing applications and
 # demo environments like this one.
 resource "azurerm_public_ip" "ptfe-pip" {
   name                         = "${var.demo_prefix}-ip"
@@ -151,8 +151,8 @@ resource "azurerm_public_ip" "ptfe-pip" {
 }
 
 # And finally we build our ptfe server. This is a standard Ubuntu instance.
-# We use the shell provisioner to run a Bash script that configures ptfe for 
-# the demo environment. Terraform supports several different types of 
+# We use the shell provisioner to run a Bash script that configures ptfe for
+# the demo environment. Terraform supports several different types of
 # provisioners including Bash, Powershell and Chef.
 resource "azurerm_virtual_machine" "ptfe" {
   name                = "${var.hostname}-ptfe"
