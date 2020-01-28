@@ -15,8 +15,8 @@
 # https://www.terraform.io/docs/providers/azurerm/
 #this change doesnt do anything
 resource "azurerm_resource_group" "ptfe" {
-  name     = "${var.resource_group}"
-  location = "${var.location}"
+  name     = var.resource_group
+  location = var.location
 }
 
 # The next resource is a Virtual Network. We can dynamically place it into the
@@ -26,10 +26,10 @@ resource "azurerm_resource_group" "ptfe" {
 # works visually, run `terraform graph` and copy the output into the online
 # GraphViz tool: http://www.webgraphviz.com/
 resource "azurerm_virtual_network" "vnet" {
-  name                = "${var.virtual_network_name}"
-  location            = "${azurerm_resource_group.ptfe.location}"
+  name                = var.virtual_network_name
+  location            = azurerm_resource_group.ptfe.location
   address_space       = ["${var.address_space}"]
-  resource_group_name = "${azurerm_resource_group.ptfe.name}"
+  resource_group_name = azurerm_resource_group.ptfe.name
 }
 
 # Next we'll build a subnet to run our VMs in. These variables can be defined
@@ -39,9 +39,9 @@ resource "azurerm_virtual_network" "vnet" {
 # making a copy of the terraform.tfvars.example file.
 resource "azurerm_subnet" "subnet" {
   name                 = "${var.demo_prefix}subnet"
-  virtual_network_name = "${azurerm_virtual_network.vnet.name}"
-  resource_group_name  = "${azurerm_resource_group.ptfe.name}"
-  address_prefix       = "${var.subnet_prefix}"
+  virtual_network_name = azurerm_virtual_network.vnet.name
+  resource_group_name  = azurerm_resource_group.ptfe.name
+  address_prefix       = var.subnet_prefix
 }
 
 ##############################################################################
@@ -58,8 +58,8 @@ resource "azurerm_subnet" "subnet" {
 # Security group to allow inbound access on port 8200,443,80,22 and 9870-9880
 resource "azurerm_network_security_group" "ptfe-sg" {
   name                = "${var.demo_prefix}-sg"
-  location            = "${var.location}"
-  resource_group_name = "${azurerm_resource_group.ptfe.name}"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.ptfe.name
 
   security_rule {
     name                       = "ptfe-https"
@@ -126,16 +126,16 @@ resource "azurerm_network_security_group" "ptfe-sg" {
 # resource. Terraform will let you know if you're missing a dependency.
 resource "azurerm_network_interface" "ptfe-nic" {
   name                = "${var.demo_prefix}ptfe-nic"
-  location            = "${var.location}"
-  resource_group_name = "${azurerm_resource_group.ptfe.name}"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.ptfe.name
 
   # network_security_group_id = "${azurerm_network_security_group.ptfe-sg.id}"
 
   ip_configuration {
     name                          = "${var.demo_prefix}ipconfig"
-    subnet_id                     = "${azurerm_subnet.subnet.id}"
+    subnet_id                     = azurerm_subnet.subnet.id
     private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = "${azurerm_public_ip.ptfe-pip.id}"
+    public_ip_address_id          = azurerm_public_ip.ptfe-pip.id
   }
 }
 
@@ -144,10 +144,10 @@ resource "azurerm_network_interface" "ptfe-nic" {
 # demo environments like this one.
 resource "azurerm_public_ip" "ptfe-pip" {
   name                         = "${var.demo_prefix}-ip"
-  location                     = "${var.location}"
-  resource_group_name          = "${azurerm_resource_group.ptfe.name}"
+  location                     = var.location
+  resource_group_name          = azurerm_resource_group.ptfe.name
   allocation_method            = "Dynamic"
-  domain_name_label            = "${var.hostname}"
+  domain_name_label            = var.hostname
 }
 
 # And finally we build our ptfe server. This is a standard Ubuntu instance.
@@ -156,18 +156,18 @@ resource "azurerm_public_ip" "ptfe-pip" {
 # provisioners including Bash, Powershell and Chef.
 resource "azurerm_virtual_machine" "ptfe" {
   name                = "${var.hostname}-ptfe"
-  location            = "${var.location}"
-  resource_group_name = "${azurerm_resource_group.ptfe.name}"
-  vm_size             = "${var.vm_size}"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.ptfe.name
+  vm_size             = var.vm_size
 
   network_interface_ids         = ["${azurerm_network_interface.ptfe-nic.id}"]
   delete_os_disk_on_termination = "true"
 
   storage_image_reference {
-    publisher = "${var.image_publisher}"
-    offer     = "${var.image_offer}"
-    sku       = "${var.image_sku}"
-    version   = "${var.image_version}"
+    publisher = var.image_publisher
+    offer     = var.image_offer
+    sku       = var.image_sku
+    version   = var.image_version
   }
 
   storage_os_disk {
@@ -175,13 +175,13 @@ resource "azurerm_virtual_machine" "ptfe" {
     managed_disk_type = "Standard_LRS"
     caching           = "ReadWrite"
     create_option     = "FromImage"
-    disk_size_gb      = "${var.storage_disk_size}"
+    disk_size_gb      = var.storage_disk_size
   }
 
   os_profile {
-    computer_name  = "${var.hostname}"
-    admin_username = "${var.admin_username}"
-    admin_password = "${var.admin_password}"
+    computer_name  = var.hostname
+    admin_username = var.admin_username
+    admin_password = var.admin_password
   }
 
   os_profile_linux_config {
@@ -189,18 +189,19 @@ resource "azurerm_virtual_machine" "ptfe" {
   }
 
   # This shell script starts a ptfe install
-  provisioner "remote-exec" {
-    inline = [
-      "curl https://install.terraform.io/ptfe/stable > install_ptfe.sh",
-      "chmod 500 install_ptfe.sh",
-      "sudo ./install_ptfe.sh no-proxy bypass-storagedriver-warnings ",
-    ]
+  // provisioner "remote-exec" {
+  //   inline = [
+  //     "curl https://install.terraform.io/ptfe/stable > install_ptfe.sh",
+  //     "curl https://get.replicated.com/terraformenterpriseha/stable/kubernetes-init > install_ptfe.sh",
+  //     "chmod 500 install_ptfe.sh",
+  //     "sudo ./install_ptfe.sh no-proxy bypass-storagedriver-warnings ",
+  //   ]
 
-    connection {
-      type     = "ssh"
-      user     = "${var.admin_username}"
-      password = "${var.admin_password}"
-      host     = "${azurerm_public_ip.ptfe-pip.fqdn}"
-    }
-  }
+  //   connection {
+  //     type     = "ssh"
+  //     user     = var.admin_username
+  //     password = var.admin_password
+  //     host     = azurerm_public_ip.ptfe-pip.fqdn
+  //   }
+  // }
 }
