@@ -14,9 +14,15 @@
 # You can find a complete list of Azure resources supported by Terraform here:
 # https://www.terraform.io/docs/providers/azurerm/
 #this change doesnt do anything
+provider "azurerm" {
+  features {
+  }
+}
+
 resource "azurerm_resource_group" "ptfe" {
   name     = var.resource_group
   location = var.location
+  
 }
 
 # The next resource is a Virtual Network. We can dynamically place it into the
@@ -41,7 +47,7 @@ resource "azurerm_subnet" "subnet" {
   name                 = "${var.demo_prefix}subnet"
   virtual_network_name = azurerm_virtual_network.vnet.name
   resource_group_name  = azurerm_resource_group.ptfe.name
-  address_prefix       = var.subnet_prefix
+   address_prefixes       = [var.subnet_prefix]
 }
 
 ##############################################################################
@@ -189,19 +195,19 @@ resource "azurerm_virtual_machine" "ptfe" {
   }
 
   # This shell script starts a ptfe install
-  // provisioner "remote-exec" {
-  //   inline = [
-  //     "curl https://install.terraform.io/ptfe/stable > install_ptfe.sh",
-  //     "curl https://get.replicated.com/terraformenterpriseha/stable/kubernetes-init > install_ptfe.sh",
-  //     "chmod 500 install_ptfe.sh",
-  //     "sudo ./install_ptfe.sh no-proxy bypass-storagedriver-warnings ",
-  //   ]
+   provisioner "remote-exec" {
+     inline = [
+       "curl https://install.terraform.io/ptfe/stable > install_ptfe.sh",
+       "curl https://get.replicated.com/terraformenterpriseha/stable/kubernetes-init > install_ptfe.sh",
+       "chmod 500 install_ptfe.sh",
+       "sudo ./install_ptfe.sh no-proxy bypass-storagedriver-warnings ",
+     ]
 
-  //   connection {
-  //     type     = "ssh"
-  //     user     = var.admin_username
-  //     password = var.admin_password
-  //     host     = azurerm_public_ip.ptfe-pip.fqdn
-  //   }
-  // }
+     connection {
+       type     = "ssh"
+       user     = var.admin_username
+       password = var.admin_password
+       host     = azurerm_public_ip.ptfe-pip.fqdn
+     }
+   }
 }
